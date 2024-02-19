@@ -2,18 +2,12 @@
 #include <Unknwn.h>
 #include <winrt/Windows.Foundation.h>
 #include "wil/resource.h"
+#include "Servers.h"
 
 namespace wf = winrt::Windows::Foundation;
 
-struct Stringable : winrt::implements<Stringable, wf::IStringable>
-{
-    winrt::hstring ToString()
-    {
-        return L"Hello from server";
-    }
-};
-
-struct Factory : winrt::implements<Factory, IClassFactory, winrt::no_module_lock>
+template<typename T>
+struct Factory : winrt::implements<Factory<T>, IClassFactory, winrt::no_module_lock>
 {
     HRESULT __stdcall CreateInstance(
         IUnknown* outer,
@@ -27,7 +21,7 @@ struct Factory : winrt::implements<Factory, IClassFactory, winrt::no_module_lock
             return CLASS_E_NOAGGREGATION;
         }
 
-        return winrt::make<Stringable>().as(iid, result);
+        return T().as(iid, result);
     }
 
     HRESULT __stdcall LockServer(BOOL) noexcept final
@@ -36,10 +30,32 @@ struct Factory : winrt::implements<Factory, IClassFactory, winrt::no_module_lock
     }
 };
 
-static constexpr GUID server_clsid // DAA16D7F-EF66-4FC9-B6F2-3E5B6D924576
+template<typename T, typename... Rest>
+std::vector<DWORD> Register()
 {
-    0xdaa16d7f, 0xef66, 0x4fc9, { 0xb6, 0xf2, 0x3e, 0x5b, 0x6d, 0x92, 0x45, 0x76 }
-};
+    std::vector<DWORD> registrations;
+    registrations.reserve(sizeof...(Rest) + 1);
+    DoRegister<T, Rest...>(registrations);
+    return registrations;
+}
+
+template<typename T = void, typename... Rest>
+void DoRegister(std::vector<DWORD>& registrations)
+{
+    auto& back = registrations.emplace_back();
+    winrt::check_hresult(CoRegisterClassObject(
+        winrt::guid_of<T>(),
+        winrt::make<Factory<T>>().get(),
+        CLSCTX_LOCAL_SERVER,
+        REGCLS_MULTIPLEUSE,
+        &back));
+    DoRegister<Rest...>(registrations);
+}
+
+template<>
+void DoRegister<void>(std::vector<DWORD>&)
+{
+}
 
 wil::unique_event _comExitEvent;
 
@@ -55,18 +71,14 @@ int main()
     NotifiableModuleLock<decltype(&_notifier)>::func = _notifier;
     winrt::init_apartment();
 
-    DWORD registration{};
-
-    winrt::check_hresult(CoRegisterClassObject(
-        server_clsid,
-        winrt::make<Factory>().get(),
-        CLSCTX_LOCAL_SERVER,
-        REGCLS_MULTIPLEUSE,
-        &registration));
+    auto registrations = Register<winrt::NotifiableModuleLock::ServerA, winrt::NotifiableModuleLock::ServerB>();
 
     _comExitEvent.wait();
 
-    winrt::check_hresult(CoRevokeClassObject(registration));
+    for (auto&& registration : registrations)
+    {
+        CoRevokeClassObject(registration);
+    }
 
     return 0;
 }

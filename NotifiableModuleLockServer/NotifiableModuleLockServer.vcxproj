@@ -106,12 +106,15 @@
   <ItemGroup>
     <ClInclude Include="NotifiableModuleLock.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Servers.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Servers.cpp" />
+    <ClCompile Include="x64\Debug\Generated Files\module.g.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -119,6 +122,9 @@
     <Text Include="readme.txt">
       <DeploymentContent>false</DeploymentContent>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Midl Include="Servers.idl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

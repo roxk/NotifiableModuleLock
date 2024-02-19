@@ -1,0 +1,14 @@
+namespace NotifiableModuleLock
+{
+    [interface_name("IServerA", DAA16D7F-EF66-4FC9-B6F2-3E5B6D924576)]
+    runtimeclass ServerA : Windows.Foundation.IStringable
+    {
+        ServerA();
+    }
+
+    [interface_name("IServerB", DAA16D7F-EF66-4FC9-B6F2-3E5B6D924577)]
+    runtimeclass ServerB : Windows.Foundation.IStringable
+    {
+        ServerB();
+    }
+}
