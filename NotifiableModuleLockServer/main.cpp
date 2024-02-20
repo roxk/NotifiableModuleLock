@@ -30,13 +30,25 @@ struct Factory : winrt::implements<Factory<T>, IClassFactory, winrt::no_module_l
     }
 };
 
+struct Revoker
+{
+    std::vector<DWORD> registrations;
+    ~Revoker()
+    {
+        for (auto&& registration : registrations)
+        {
+            CoRevokeClassObject(registration);
+        }
+    }
+};
+
 template<typename T, typename... Rest>
-std::vector<DWORD> Register()
+Revoker Register()
 {
     std::vector<DWORD> registrations;
     registrations.reserve(sizeof...(Rest) + 1);
     DoRegister<T, Rest...>(registrations);
-    return registrations;
+    return { std::move(registrations) };
 }
 
 template<typename T = void, typename... Rest>
@@ -71,15 +83,10 @@ int main()
     NotifiableModuleLock<decltype(&_notifier)>::func = _notifier;
     winrt::init_apartment();
 
-    auto registrations = Register<winrt::NotifiableModuleLock::ServerA,
+    auto revoker = Register<winrt::NotifiableModuleLock::ServerA,
         winrt::NotifiableModuleLock::ServerB>();
 
     _comExitEvent.wait();
-
-    for (auto&& registration : registrations)
-    {
-        CoRevokeClassObject(registration);
-    }
 
     return 0;
 }
