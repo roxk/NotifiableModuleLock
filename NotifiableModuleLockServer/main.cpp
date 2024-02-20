@@ -71,7 +71,8 @@ int main()
     NotifiableModuleLock<decltype(&_notifier)>::func = _notifier;
     winrt::init_apartment();
 
-    auto registrations = Register<winrt::NotifiableModuleLock::ServerA, winrt::NotifiableModuleLock::ServerB>();
+    auto registrations = Register<winrt::NotifiableModuleLock::ServerA,
+        winrt::NotifiableModuleLock::ServerB>();
 
     _comExitEvent.wait();
 
